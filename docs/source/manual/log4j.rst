@@ -1,38 +1,40 @@
 .. _manual-log4j:
 
-###################
-Instrumenting Log4j
-###################
+####################
+Instrumenting Log4j2
+####################
 
-The ``metrics-log4j`` module provides ``InstrumentedAppender``, a Log4j ``Appender`` implementation
+The ``metrics-log4j2`` modules provide ``InstrumentedAppender``, a Log4j2 ``Appender`` implementation
 which records the rate of logged events by their logging level.
 
-You can either add it to the root logger programmatically:
+
+You can add it to the root logger programmatically.
 
 .. code-block:: java
 
-    LogManager.getRootLogger().addAppender(new InstrumentedAppender());
+    Filter filter = null;        // That's fine if we don't use filters; https://logging.apache.org/log4j/2.x/manual/filters.html
+    PatternLayout layout = null; // The layout isn't used in InstrumentedAppender
 
-Or you can add it via Log4j's XML configuration:
+    InstrumentedAppender appender = new InstrumentedAppender(metrics, filter, layout, false);
+    appender.start();
+
+    LoggerContext context = (LoggerContext) LogManager.getContext(false);
+    Configuration config = context.getConfiguration();
+    config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME).addAppender(appender, level, filter);
+    context.updateLoggers(config);
+
+You can also use standard log4j2 configuration, via plugin support:
 
 .. code-block:: xml
 
-    <?xml version="1.0" encoding="UTF-8" ?>
-    <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
-
-    <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
-        <appender name="console" class="org.apache.log4j.ConsoleAppender">
-            <param name="Target" value="System.out"/>
-            <layout class="org.apache.log4j.PatternLayout">
-                <param name="ConversionPattern" value="%-5p %c{1} - %m%n"/>
-            </layout>
-        </appender>
-
-        <appender name="metrics" class="com.yammer.metrics.log4j.InstrumentedAppender"/>
-
-        <root>
-            <priority value="debug"/>
-            <appender-ref ref="console"/>
-            <appender-ref ref="metrics"/>
-        </root>
-    </log4j:configuration>
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="INFO" name="log4j2-config" packages="io.dropwizard.metrics.log4j2">
+    <Appenders>
+        <MetricsAppender name="metrics" registryName="shared-metrics-registry"/>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="metrics" />
+        </Root>
+    </Loggers>
+    </Configuration>

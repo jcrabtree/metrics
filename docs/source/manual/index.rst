@@ -12,16 +12,19 @@ User Manual
     :maxdepth: 1
 
     core
+    healthchecks
     ehcache
-    ganglia
     graphite
+    collectd
     httpclient
+    influxdb
     jdbi
     jersey
     jetty
     log4j
     logback
-    scala
+    jvm
+    json
+    servlets
     servlet
-    webapps
-
+    third-party

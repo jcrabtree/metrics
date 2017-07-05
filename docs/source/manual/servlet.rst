@@ -1,67 +1,56 @@
 .. _manual-servlet:
 
-################
-Metrics Servlets
-################
+##############################
+Instrumenting Web Applications
+##############################
 
-The ``metrics-servlet`` module provides a handful of useful servlets:
+The ``metrics-servlet`` module provides a Servlet filter which has meters for status codes, a
+counter for the number of active requests, and a timer for request duration. By default the filter
+will use ``io.dropwizard.metrics.servlet.InstrumentedFilter`` as the base name of the metrics.
+You can use the filter in your ``web.xml`` like this:
 
-.. _man-servlet-healthcheck:
+.. code-block:: xml
 
-HealthCheckServlet
-==================
+    <filter>
+        <filter-name>instrumentedFilter</filter-name>
+        <filter-class>io.dropwizard.metrics.servlet.InstrumentedFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>instrumentedFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
 
-``HealthCheckServlet`` responds to ``GET`` requests by running all the [health checks](#health-checks)
-and returning ``501 Not Implemented`` if no health checks are registered, ``200 OK`` if all pass, or
-``500 Internal Service Error`` if one or more fail. The results are returned as a human-readable
-``text/plain`` entity.
 
-If the servlet context has an attributed named
-``com.yammer.metrics.servlet.HealthCheckServlet.registry`` which is a ``HealthCheckRegistry``,
-``HealthCheckServlet`` will use that instead of the default ``HealthCheckRegistry``.
+An optional filter init-param ``name-prefix`` can be specified to override the base name
+of the metrics associated with the filter mapping. This can be helpful if you need to instrument
+multiple url patterns and give each a unique name.
 
-.. _man-servlet-threaddump:
+.. code-block:: xml
 
-ThreadDumpServlet
-=================
+    <filter>
+        <filter-name>instrumentedFilter</filter-name>
+        <filter-class>io.dropwizard.metrics.servlet.InstrumentedFilter</filter-class>
+        <init-param>
+            <param-name>name-prefix</param-name>
+            <param-value>authentication</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>instrumentedFilter</filter-name>
+        <url-pattern>/auth/*</url-pattern>
+    </filter-mapping>
 
-``ThreadDumpServlet`` responds to ``GET`` requests with a ``text/plain`` representation of all the live
-threads in the JVM, their states, their stack traces, and the state of any locks they may be
-waiting for.
+You will need to add your ``MetricRegistry`` to the servlet context as an attribute named
+``io.dropwizard.metrics.servlet.InstrumentedFilter.registry``. You can do this using the Servlet API
+by extending ``InstrumentedFilterContextListener``:
 
-.. _man-servlet-metrics:
+.. code-block:: java
 
-MetricsServlet
-==============
+    public class MyInstrumentedFilterContextListener extends InstrumentedFilterContextListener {
+        public static final MetricRegistry REGISTRY = new MetricRegistry();
 
-``MetricsServlet`` exposes the state of the metrics in a particular registry as a JSON object.
-
-If the servlet context has an attributed named
-``com.yammer.metrics.servlet.MetricsServlet.registry`` which is a ``MetricsRegistry``,
-``MetricsServlet`` will use that instead of the default ``MetricsRegistry``.
-
-``MetricsServlet`` also takes an initialization parameter, ``show-jvm-metrics``, which if ``"false"`` will
-disable the outputting of JVM-level information in the JSON object.
-
-.. _man-servlet-ping:
-
-PingServlet
-===========
-
-``PingServlet`` responds to ``GET`` requests with a ``text/plain``/``200 OK`` response of ``pong``. This is
-useful for determining liveness for load balancers, etc.
-
-.. _man-servlet-admin:
-
-AdminServlet
-============
-
-``AdminServlet`` aggregates ``HealthCheckServlet``, ``ThreadDumpServlet``, ``MetricsServlet``, and
-``PingServlet`` into a single, easy-to-use servlet which provides a set of URIs:
-
-* ``/``: an HTML admin menu with links to the following:
-
-  * ``/healthcheck``: ``HealthCheckServlet``
-  * ``/metrics``: ``MetricsServlet``
-  * ``/ping``: ``PingServlet``
-  * ``/threads``: ``ThreadDumpServlet``
+        @Override
+        protected MetricRegistry getMetricRegistry() {
+            return REGISTRY;
+        }
+    }

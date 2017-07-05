@@ -1,15 +1,33 @@
 .. _manual-jersey:
 
-####################
-Instrumenting Jersey
-####################
+########################
+Instrumenting Jersey 2.x
+########################
 
-The ``metrics-jersey`` module provides ``InstrumentedResourceMethodDispatchAdapter``, which allows
-you to instrument methods on your Jersey_ resource classes:
+Jersey 2.x changed the API for how resource method monitoring works, so a new
+module ``metrics-jersey2`` provides ``InstrumentedResourceMethodApplicationListener``,
+which allows you to instrument methods on your `Jersey 2.x`_ resource classes:
 
-.. _Jersey: http://jersey.java.net/
+The ``metrics-jersey2`` module provides ``InstrumentedResourceMethodApplicationListener``, which allows
+you to instrument methods on your `Jersey 2.x`_ resource classes:
+
+.. _Jersey 2.x: https://jersey.java.net/documentation/latest/index.html
+
+An instance of ``InstrumentedResourceMethodApplicationListener`` must be registered with your Jersey
+application's ``ResourceConfig`` as a singleton provider for this to work.
 
 .. code-block:: java
+
+    public class ExampleApplication extends ResourceConfig {
+        .
+        .
+        .
+        register(new InstrumentedResourceMethodApplicationListener (new MetricRegistry()));
+        config = config.register(ExampleResource.class);
+        .
+        .
+        .
+    }
 
     @Path("/example")
     @Produces(MediaType.TEXT_PLAIN)
